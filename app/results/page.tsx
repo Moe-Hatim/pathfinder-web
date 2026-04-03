@@ -1,41 +1,42 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function ResultsPage() {
+function ResultsContent() {
     const params = useSearchParams();
 
-    const name = params.get("name");
-    const interest = params.get("interest");
-    const goal = params.get("goal");
+    const name = params.get("name") || "Student";
+    const interest = params.get("interest") || "General Tech";
+    const goal = params.get("goal") || "Clarity";
 
     function getRecommendation() {
         if (interest === "Web Development") {
-            if (goal === "Freelancing") return "Frontend Development";
-            if (goal === "Startup") return "Full-Stack Development";
-            return "Frontend Development";
+        if (goal === "Freelancing") return "Frontend Development";
+        if (goal === "Startup") return "Full-Stack Development";
+        return "Frontend Development";
         }
 
         if (interest === "Backend Development") {
-            if (goal === "Job") return "Backend Engineering";
-            if (goal === "Startup") return "Full-Stack Development";
-            return "Backend Engineering";
+        if (goal === "Job") return "Backend Engineering";
+        if (goal === "Startup") return "Full-Stack Development";
+        return "Backend Engineering";
         }
 
         if (interest === "Data Analytics") {
-            return "Data Analytics / Data Science";
+        return "Data Analytics / Data Science";
         }
 
         if (interest === "Cybersecurity") {
-            return "Cybersecurity";
+        return "Cybersecurity";
         }
 
         if (interest === "Mobile Development") {
-            return "Mobile App Development";
+        return "Mobile App Development";
         }
 
         if (interest === "UI/UX Design") {
-            return "UI/UX Design";
+        return "UI/UX Design";
         }
 
         return "General Software Development";
@@ -51,7 +52,7 @@ export default function ResultsPage() {
             </h1>
 
             <p className="text-slate-400 mb-6">
-            here is your recommended direction:
+            Based on your interest and goal, here is your recommended direction:
             </p>
 
             <div className="bg-slate-950 border border-slate-700 rounded-xl p-6 mb-6">
@@ -59,7 +60,8 @@ export default function ResultsPage() {
                 {path}
             </h2>
             <p className="text-slate-400 mt-3">
-            This is based on your interest in <strong>{interest}</strong> and your goal of <strong>{goal}</strong>.
+                This recommendation is based on your interest in{" "}
+                <strong>{interest}</strong> and your goal of <strong>{goal}</strong>.
             </p>
             </div>
 
@@ -75,11 +77,25 @@ export default function ResultsPage() {
 
             <div className="mt-8 bg-yellow-900/20 border border-yellow-700 rounded-xl p-4">
             <p className="text-yellow-300 text-sm">
-                ⚠️ Avoid learning too many things at once. Focus on this path for the next few weeks before exploring others.
+                ⚠️ Avoid learning too many things at once. Focus on this path for
+                the next few weeks before exploring others.
             </p>
             </div>
-            
         </div>
         </main>
+    );
+    }
+
+    export default function ResultsPage() {
+    return (
+        <Suspense
+        fallback={
+            <main className="min-h-screen bg-slate-950 text-white px-6 py-12 flex items-center justify-center">
+            <p className="text-slate-300 text-lg">Loading your results...</p>
+            </main>
+        }
+        >
+        <ResultsContent />
+        </Suspense>
     );
 }
