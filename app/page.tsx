@@ -18,7 +18,7 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-14">
   <Link
-    href="/paths"
+    href="/assessment"
     className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold px-6 py-3 rounded-xl transition"
   >
     Get Started
