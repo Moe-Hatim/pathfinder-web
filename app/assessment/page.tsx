@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const interests = [
     "Web Development",
@@ -12,6 +13,8 @@ const interests = [
 ];
 
 export default function AssessmentPage() {
+    const router = useRouter();
+
     const [name, setName] = useState("");
     const [field, setField] = useState("");
     const [goal, setGoal] = useState("");
@@ -20,9 +23,9 @@ export default function AssessmentPage() {
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
-        alert(
-        `Profile Created!\n\nName: ${name}\nField: ${field}\nGoal: ${goal}\nInterest: ${interest}`
-        );
+        const query = `?name=${encodeURIComponent(name)}&field=${encodeURIComponent(field)}&goal=${encodeURIComponent(goal)}&interest=${encodeURIComponent(interest)}`;
+
+        router.push("/results" + query);
     }
 
     return (
@@ -35,12 +38,14 @@ export default function AssessmentPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-                <label className="block mb-2 text-sm text-slate-300">Your Name</label>
+                <label className="block mb-2 text-sm text-slate-300">
+                Your Name
+                </label>
                 <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none"
+                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
                 placeholder="Enter your name"
                 required
                 />
@@ -54,7 +59,7 @@ export default function AssessmentPage() {
                 type="text"
                 value={field}
                 onChange={(e) => setField(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none"
+                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
                 placeholder="e.g. CS, IT, Software Engineering"
                 required
                 />
@@ -67,7 +72,7 @@ export default function AssessmentPage() {
                 <select
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none"
+                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
                 required
                 >
                 <option value="">Select a goal</option>
@@ -86,7 +91,7 @@ export default function AssessmentPage() {
                 <select
                 value={interest}
                 onChange={(e) => setInterest(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none"
+                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
                 required
                 >
                 <option value="">Choose an area</option>
