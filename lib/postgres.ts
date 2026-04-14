@@ -15,12 +15,26 @@ function getDatabaseUrl() {
   ).trim();
 }
 
+function normalizeConnectionString(raw: string) {
+  try {
+    const url = new URL(raw);
+    // We control SSL via Pool options below.
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("sslcert");
+    url.searchParams.delete("sslkey");
+    url.searchParams.delete("sslrootcert");
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 function getPool() {
   if (pool) {
     return pool;
   }
 
-  const connectionString = getDatabaseUrl();
+  const connectionString = normalizeConnectionString(getDatabaseUrl());
   if (!connectionString) {
     throw new Error(
       "Postgres is not configured. Set POSTGRES_URL (or DATABASE_URL) in environment variables.",
