@@ -2,13 +2,19 @@ import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { getUserById, type AuthUser } from "@/lib/auth";
 
 const COOKIE_NAME = "pathfinder_auth";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 
 type SessionPayload = {
   userId: string;
+  createdAt: string;
+};
+
+export type AuthSessionUser = {
+  id: string;
+  name: string;
+  email: string;
   createdAt: string;
 };
 
@@ -73,7 +79,7 @@ export async function endAuthSession() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-export async function getCurrentUser(): Promise<AuthUser | null> {
+export async function getCurrentUser(): Promise<AuthSessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) {
@@ -85,5 +91,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     return null;
   }
 
-  return getUserById(payload.userId);
+  try {
+    const { getUserById } = await import("@/lib/auth");
+    return getUserById(payload.userId);
+  } catch (error) {
+    console.error("[PathFinder Auth] Failed to load user from session.", error);
+    return null;
+  }
 }
