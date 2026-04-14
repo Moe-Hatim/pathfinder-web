@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PathFinder Web
 
-## Getting Started
+PathFinder is a student career-direction product that:
 
-First, run the development server:
+- supports account signup/login with secure cookie sessions
+- stores assessment data in SQLite for persistent user history
+- generates explainable path recommendations with confidence scores
+- provides a 30/60/90-day roadmap with weekly tasks
+- includes a progress dashboard for weekly execution
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- SQLite (`better-sqlite3`)
+
+## Local Development
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create an environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Set a strong session secret in `.env.local`:
+
+```env
+SESSION_SECRET=replace-with-a-long-random-secret
+```
+
+4. Configure password reset email delivery in `.env.local` (pick one method):
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+EMAIL_FROM=PathFinder <no-reply@yourdomain.com>
+
+# Option A: Resend
+RESEND_API_KEY=your_resend_api_key
+
+# Option B: SMTP
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_password
+```
+
+5. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Core Routes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/` landing page
+- `/auth/signup` account creation
+- `/auth/login` account login
+- `/home` account home page (post-login/post-signup)
+- `/assessment` secure assessment form
+- `/results` personalized recommendation + roadmap
+- `/dashboard` weekly progress tracking
+- `/paths` static overview of path options
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Security Notes
 
-## Learn More
+- Assessment data is **not** sent via URL query params.
+- Authentication uses a signed, HTTP-only cookie session.
+- Assessment records persist in `data/pathfinder.db`.
+- For production, always set a strong `SESSION_SECRET`.
+- Password reset emails require either `RESEND_API_KEY` or SMTP variables.
 
-To learn more about Next.js, take a look at the following resources:
+## Quality Checks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```

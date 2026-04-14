@@ -3,24 +3,169 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --pf-bg-base: #050816;
+  --pf-bg-mid: #070d21;
+  --pf-bg-surface: rgba(15, 23, 42, 0.82);
+  --pf-text-base: #eaf3ff;
+  --pf-brand-cyan: #22d3ee;
+  --pf-brand-sky: #38bdf8;
+  --pf-border-soft: rgba(148, 163, 184, 0.24);
+  --pf-space-1: 0.25rem;
+  --pf-space-2: 0.5rem;
+  --pf-space-3: 0.75rem;
+  --pf-space-4: 1rem;
+  --pf-space-5: 1.25rem;
+  --pf-space-6: 1.5rem;
+  --pf-space-8: 2rem;
+  --pf-space-10: 2.5rem;
+  --pf-radius-sm: 0.625rem;
+  --pf-radius-md: 0.9rem;
+  --pf-radius-lg: 1rem;
+  --pf-radius-xl: 1.35rem;
+  --pf-shadow-soft: 0 14px 28px rgba(2, 6, 23, 0.28);
+  --pf-shadow-panel:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 36px rgba(2, 6, 23, 0.45);
+  --pf-motion-fast: 140ms;
+  --pf-motion-normal: 220ms;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Segoe UI", "Inter", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Code", "Consolas", "SFMono-Regular", Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #050816;
+    --foreground: #eaf3ff;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.pf-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(42rem 32rem at 8% 8%, rgba(56, 189, 248, 0.22), transparent 64%),
+    radial-gradient(36rem 30rem at 92% 18%, rgba(14, 165, 233, 0.14), transparent 60%),
+    radial-gradient(36rem 30rem at 50% 100%, rgba(34, 211, 238, 0.11), transparent 62%),
+    linear-gradient(160deg, var(--pf-bg-base) 0%, var(--pf-bg-mid) 52%, #09152b 100%);
+}
+
+.pf-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.75), transparent 80%);
+}
+
+.pf-shell::after {
+  content: "";
+  position: absolute;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.35), rgba(45, 212, 191, 0));
+  filter: blur(22px);
+  top: -6rem;
+  right: -6rem;
+  animation: pfFloatOrb 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.pf-panel {
+  border: 1px solid var(--pf-border-soft);
+  background: linear-gradient(140deg, var(--pf-bg-surface), rgba(15, 23, 42, 0.62));
+  backdrop-filter: blur(10px);
+  box-shadow: var(--pf-shadow-panel);
+  border-radius: var(--pf-radius-lg);
+}
+
+.pf-btn-primary {
+  border-radius: var(--pf-radius-md);
+  background: linear-gradient(95deg, var(--pf-brand-cyan), var(--pf-brand-sky));
+  color: #041018;
+  font-weight: 700;
+  transition: transform var(--pf-motion-fast) ease, box-shadow var(--pf-motion-fast) ease;
+  box-shadow: 0 10px 26px rgba(56, 189, 248, 0.28);
+  min-height: 2.75rem;
+}
+
+.pf-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(56, 189, 248, 0.35);
+}
+
+.pf-btn-muted {
+  border-radius: var(--pf-radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.6);
+  transition: background var(--pf-motion-normal) ease, transform var(--pf-motion-fast) ease;
+  min-height: 2.75rem;
+}
+
+.pf-btn-muted:hover {
+  transform: translateY(-2px);
+  background: rgba(30, 41, 59, 0.82);
+}
+
+.pf-focus-ring:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.25);
+}
+
+.pf-stat-chip {
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 9999px;
+  padding: 0.3rem 0.72rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pf-sticky-cta {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 40;
+}
+
+@keyframes pfFloatOrb {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-20px, 18px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-shell::after {
+    animation: none;
+  }
+
+  .pf-btn-primary,
+  .pf-btn-muted {
+    transition: none;
+  }
 }
