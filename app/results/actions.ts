@@ -29,7 +29,7 @@ export async function submitRecommendationFeedbackAction(input: {
     throw new Error("Invalid feedback payload");
   }
 
-  persistRecommendationFeedback(user.id, parsed.data);
+  await persistRecommendationFeedback(user.id, parsed.data);
 
   logEvent("info", ctx, "feedback_saved");
   revalidatePath("/results");

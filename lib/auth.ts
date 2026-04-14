@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomBytes, scryptSync, timingSafeEqual, randomUUID } from "node:crypto";
-import { db } from "@/lib/db";
+import { query } from "@/lib/postgres";
 
 type DbUser = {
   id: string;
@@ -49,44 +49,49 @@ function mapUser(row: DbUser): AuthUser {
   };
 }
 
-export function getUserByEmail(email: string) {
-  const stmt = db.prepare(
-    "SELECT id, name, email, password_hash, created_at FROM users WHERE email = ?",
+export async function getUserByEmail(email: string) {
+  const result = await query<DbUser>(
+    "SELECT id, name, email, password_hash, created_at FROM users WHERE email = $1 LIMIT 1",
+    [email.toLowerCase()],
   );
-  const row = stmt.get(email.toLowerCase()) as DbUser | undefined;
-  return row;
+  return result.rows[0] ?? null;
 }
 
-export function getUserById(id: string) {
-  const stmt = db.prepare(
-    "SELECT id, name, email, password_hash, created_at FROM users WHERE id = ?",
+export async function getUserById(id: string) {
+  const result = await query<DbUser>(
+    "SELECT id, name, email, password_hash, created_at FROM users WHERE id = $1 LIMIT 1",
+    [id],
   );
-  const row = stmt.get(id) as DbUser | undefined;
+  const row = result.rows[0];
   return row ? mapUser(row) : null;
 }
 
-export function createUser(input: { name: string; email: string; password: string }) {
+export async function createUser(input: { name: string; email: string; password: string }) {
   const now = new Date().toISOString();
   const id = randomUUID();
   const passwordHash = hashPassword(input.password);
+  const name = input.name.trim();
+  const email = input.email.toLowerCase().trim();
 
-  const stmt = db.prepare(
-    "INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+  await query(
+    "INSERT INTO users (id, name, email, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)",
+    [id, name, email, passwordHash, now],
   );
-  stmt.run(id, input.name.trim(), input.email.toLowerCase().trim(), passwordHash, now);
 
-  return { id, name: input.name.trim(), email: input.email.toLowerCase().trim(), createdAt: now };
+  return { id, name, email, createdAt: now };
 }
 
-export function updateUserPasswordById(userId: string, password: string) {
+export async function updateUserPasswordById(userId: string, password: string) {
   const passwordHash = hashPassword(password);
-  const stmt = db.prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-  const result = stmt.run(passwordHash, userId) as { changes?: number };
-  return (result.changes ?? 0) > 0;
+  const result = await query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+    passwordHash,
+    userId,
+  ]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function authenticateUser(input: { email: string; password: string }) {
-  const user = getUserByEmail(input.email);
+export async function authenticateUser(input: { email: string; password: string }) {
+  const user = await getUserByEmail(input.email);
   if (!user) {
     return null;
   }

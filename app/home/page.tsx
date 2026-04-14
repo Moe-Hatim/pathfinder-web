@@ -16,10 +16,10 @@ export default async function AccountHomePage() {
     redirect("/auth/login");
   }
 
-  const latest = getLatestAssessmentForUser(user.id);
-  const history = listAssessmentsForUser(user.id);
+  const latest = await getLatestAssessmentForUser(user.id);
+  const history = await listAssessmentsForUser(user.id);
   const completedTasks = latest
-    ? listCompletedTasksForAssessment(user.id, latest.id).length
+    ? (await listCompletedTasksForAssessment(user.id, latest.id)).length
     : 0;
   const weeklyTaskCount = latest?.recommendation.top.roadmap.thisWeek.length ?? 0;
 

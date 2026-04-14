@@ -3,7 +3,7 @@
 PathFinder is a student career-direction product that:
 
 - supports account signup/login with secure cookie sessions
-- stores assessment data in SQLite for persistent user history
+- stores assessment data in Postgres for persistent user history
 - generates explainable path recommendations with confidence scores
 - provides a 30/60/90-day roadmap with weekly tasks
 - includes a progress dashboard for weekly execution
@@ -14,7 +14,7 @@ PathFinder is a student career-direction product that:
 - React 19
 - TypeScript
 - Tailwind CSS v4
-- SQLite (`better-sqlite3`)
+- Postgres (`pg`)
 
 ## Local Development
 
@@ -34,6 +34,7 @@ cp .env.example .env.local
 
 ```env
 SESSION_SECRET=replace-with-a-long-random-secret
+POSTGRES_URL=postgres://user:password@host:5432/dbname
 ```
 
 4. Configure password reset email delivery in `.env.local` (pick one method):
@@ -73,8 +74,9 @@ npm run dev
 
 - Assessment data is **not** sent via URL query params.
 - Authentication uses a signed, HTTP-only cookie session.
-- Assessment records persist in `data/pathfinder.db`.
+- Assessment records persist in Postgres.
 - For production, always set a strong `SESSION_SECRET`.
+- Set `POSTGRES_URL` in your hosting environment (for Vercel, connect a Postgres integration).
 - Password reset emails require either `RESEND_API_KEY` or SMTP variables.
 
 ## Quality Checks

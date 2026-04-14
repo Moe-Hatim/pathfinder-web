@@ -40,10 +40,10 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
     );
   }
 
-  const latest = getLatestAssessmentForUser(user.id);
+  const latest = await getLatestAssessmentForUser(user.id);
   const selectedAssessment =
     params.assessmentId && params.assessmentId.length > 0
-      ? getAssessmentForUserById(user.id, params.assessmentId)
+      ? await getAssessmentForUserById(user.id, params.assessmentId)
       : null;
   const activeAssessment = selectedAssessment ?? latest;
 
@@ -64,7 +64,7 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   }
 
   const { assessment, recommendation } = activeAssessment;
-  const feedback = getFeedbackForAssessment(user.id, activeAssessment.id);
+  const feedback = await getFeedbackForAssessment(user.id, activeAssessment.id);
   const scoreBreakdown = recommendation.top.scoreBreakdown ?? [];
   const lowConfidence = recommendation.top.confidence < 65;
   const dualTrackOption = recommendation.alternatives[0] ?? null;

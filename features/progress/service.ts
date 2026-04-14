@@ -12,7 +12,7 @@ import type {
 } from "@/features/progress/schemas";
 
 export function persistTaskProgress(userId: string, input: TaskProgressInput) {
-  setTaskProgress({
+  return setTaskProgress({
     userId,
     assessmentId: input.assessmentId,
     taskKey: input.taskKey,
@@ -21,7 +21,7 @@ export function persistTaskProgress(userId: string, input: TaskProgressInput) {
 }
 
 export function persistRecommendationFeedback(userId: string, input: RecommendationFeedbackInput) {
-  upsertFeedback({
+  return upsertFeedback({
     userId,
     assessmentId: input.assessmentId,
     helpful: input.helpful,
@@ -30,7 +30,7 @@ export function persistRecommendationFeedback(userId: string, input: Recommendat
 }
 
 export function persistOutcomeCheckin(userId: string, input: OutcomeCheckinInput) {
-  upsertOutcomeCheckin({
+  return upsertOutcomeCheckin({
     userId,
     assessmentId: input.assessmentId,
     projectsCompleted: input.projectsCompleted,

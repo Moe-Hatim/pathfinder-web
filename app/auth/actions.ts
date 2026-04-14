@@ -33,7 +33,7 @@ export async function signupAction(formData: FormData) {
     redirect("/auth/signup?error=invalid_input");
   }
 
-  const result = registerUser(parsed.data);
+  const result = await registerUser(parsed.data);
   if (!result.ok && result.code === "email_exists") {
     logEvent("warn", ctx, "email_exists");
     redirect("/auth/signup?error=email_exists");
@@ -60,7 +60,7 @@ export async function loginAction(formData: FormData) {
     redirect("/auth/login?error=invalid_credentials");
   }
 
-  const result = loginUser(parsed.data);
+  const result = await loginUser(parsed.data);
   if (!result.ok) {
     logEvent("warn", ctx, "invalid_credentials");
     redirect("/auth/login?error=invalid_credentials");
@@ -98,9 +98,9 @@ export async function forgotPasswordAction(formData: FormData) {
     redirect("/auth/forgot-password?status=sent");
   }
 
-  const user = getUserByEmail(parsed.data.email);
+  const user = await getUserByEmail(parsed.data.email);
   if (user) {
-    const { token } = createPasswordResetToken(user.id);
+    const { token } = await createPasswordResetToken(user.id);
     const headerStore = await headers();
     const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
     const proto = headerStore.get("x-forwarded-proto");
@@ -142,13 +142,13 @@ export async function resetPasswordAction(formData: FormData) {
     redirect("/auth/reset-password?error=invalid_input");
   }
 
-  const consumed = consumePasswordResetToken(parsed.data.token);
+  const consumed = await consumePasswordResetToken(parsed.data.token);
   if (!consumed) {
     logEvent("warn", ctx, "invalid_or_expired_token");
     redirect("/auth/reset-password?error=invalid_or_expired");
   }
 
-  const updated = updateUserPasswordById(consumed.userId, parsed.data.password);
+  const updated = await updateUserPasswordById(consumed.userId, parsed.data.password);
   if (!updated) {
     logEvent("warn", ctx, "user_not_found");
     redirect("/auth/reset-password?error=invalid_or_expired");

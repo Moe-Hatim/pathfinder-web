@@ -39,9 +39,9 @@ export async function submitAssessment(formData: FormData) {
   }
 
   const assessment = parsed.data;
-  const recommendation = generatePersonalizedRecommendation(assessment);
+  const recommendation = await generatePersonalizedRecommendation(assessment);
 
-  createAssessmentRecord({
+  await createAssessmentRecord({
     userId: user.id,
     assessment,
     recommendation,

@@ -24,7 +24,7 @@ export async function updateTaskProgressAction(input: {
     throw new Error("Invalid task progress payload");
   }
 
-  persistTaskProgress(user.id, {
+  await persistTaskProgress(user.id, {
     assessmentId: parsed.data.assessmentId,
     taskKey: parsed.data.taskKey,
     completed: parsed.data.completed,
@@ -59,7 +59,7 @@ export async function submitOutcomeCheckinAction(formData: FormData) {
     throw new Error("Invalid outcome payload");
   }
 
-  persistOutcomeCheckin(user.id, parsed.data);
+  await persistOutcomeCheckin(user.id, parsed.data);
 
   logEvent("info", ctx, "outcome_saved");
   revalidatePath("/dashboard");

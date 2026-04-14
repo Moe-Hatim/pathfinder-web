@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { db } from "@/lib/db";
+import { query } from "@/lib/postgres";
 
 const RESET_TOKEN_TTL_MINUTES = 30;
 
@@ -16,33 +16,33 @@ function hashResetToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export function createPasswordResetToken(userId: string) {
+export async function createPasswordResetToken(userId: string) {
   const token = randomBytes(32).toString("base64url");
   const tokenHash = hashResetToken(token);
   const id = randomUUID();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + RESET_TOKEN_TTL_MINUTES * 60 * 1000).toISOString();
 
-  const stmt = db.prepare(`
-    INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, used_at, created_at)
-    VALUES (?, ?, ?, ?, NULL, ?)
-  `);
+  await query(
+    `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, used_at, created_at)
+     VALUES ($1, $2, $3, $4, NULL, $5)`,
+    [id, userId, tokenHash, expiresAt, now.toISOString()],
+  );
 
-  stmt.run(id, userId, tokenHash, expiresAt, now.toISOString());
   return { token, expiresAt };
 }
 
-export function consumePasswordResetToken(rawToken: string): { userId: string } | null {
+export async function consumePasswordResetToken(rawToken: string): Promise<{ userId: string } | null> {
   const tokenHash = hashResetToken(rawToken);
+  const result = await query<PasswordResetRow>(
+    `SELECT id, user_id, expires_at, used_at
+     FROM password_reset_tokens
+     WHERE token_hash = $1
+     LIMIT 1`,
+    [tokenHash],
+  );
 
-  const selectStmt = db.prepare(`
-    SELECT id, user_id, expires_at, used_at
-    FROM password_reset_tokens
-    WHERE token_hash = ?
-    LIMIT 1
-  `);
-
-  const row = selectStmt.get(tokenHash) as PasswordResetRow | undefined;
+  const row = result.rows[0];
   if (!row || row.used_at) {
     return null;
   }
@@ -52,14 +52,14 @@ export function consumePasswordResetToken(rawToken: string): { userId: string } 
   }
 
   const now = new Date().toISOString();
-  const updateStmt = db.prepare(`
-    UPDATE password_reset_tokens
-    SET used_at = ?
-    WHERE id = ? AND used_at IS NULL
-  `);
+  const updateResult = await query(
+    `UPDATE password_reset_tokens
+     SET used_at = $1
+     WHERE id = $2 AND used_at IS NULL`,
+    [now, row.id],
+  );
 
-  const result = updateStmt.run(now, row.id);
-  if ((result as { changes?: number }).changes === 0) {
+  if (updateResult.rowCount === 0) {
     return null;
   }
 

@@ -1,12 +1,8 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { db } from "@/lib/db";
-import type {
-  AssessmentInput,
-  PathKey,
-  RecommendationResult,
-} from "@/lib/recommendation";
+import { query } from "@/lib/postgres";
+import type { AssessmentInput, PathKey, RecommendationResult } from "@/lib/recommendation";
 
 type DbAssessmentRow = {
   id: string;
@@ -69,14 +65,12 @@ function toPersisted(row: DbAssessmentRow): PersistedAssessment {
     },
     recommendation: {
       top: JSON.parse(row.recommendation_top_json) as RecommendationResult["top"],
-      alternatives: JSON.parse(
-        row.recommendation_alternatives_json,
-      ) as RecommendationResult["alternatives"],
+      alternatives: JSON.parse(row.recommendation_alternatives_json) as RecommendationResult["alternatives"],
     },
   };
 }
 
-export function createAssessmentRecord(input: {
+export async function createAssessmentRecord(input: {
   userId: string;
   assessment: AssessmentInput;
   recommendation: RecommendationResult;
@@ -84,110 +78,124 @@ export function createAssessmentRecord(input: {
   const now = new Date().toISOString();
   const id = randomUUID();
 
-  const stmt = db.prepare(`
-    INSERT INTO assessments (
+  await query(
+    `INSERT INTO assessments (
       id, user_id, name, field, goal, interest, level, hours_per_week,
       work_style, math_comfort, thinking_style, timeline_urgency,
       recommendation_top_json, recommendation_alternatives_json, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  stmt.run(
-    id,
-    input.userId,
-    input.assessment.name,
-    input.assessment.field,
-    input.assessment.goal,
-    input.assessment.interest,
-    input.assessment.level,
-    input.assessment.hoursPerWeek,
-    input.assessment.workStyle,
-    input.assessment.mathComfort,
-    input.assessment.thinkingStyle,
-    input.assessment.timelineUrgency,
-    JSON.stringify(input.recommendation.top),
-    JSON.stringify(input.recommendation.alternatives),
-    now,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    [
+      id,
+      input.userId,
+      input.assessment.name,
+      input.assessment.field,
+      input.assessment.goal,
+      input.assessment.interest,
+      input.assessment.level,
+      input.assessment.hoursPerWeek,
+      input.assessment.workStyle,
+      input.assessment.mathComfort,
+      input.assessment.thinkingStyle,
+      input.assessment.timelineUrgency,
+      JSON.stringify(input.recommendation.top),
+      JSON.stringify(input.recommendation.alternatives),
+      now,
+    ],
   );
 
   return id;
 }
 
-function selectBaseQuery(whereClause: string) {
-  return `
-    SELECT
+export async function getLatestAssessmentForUser(userId: string): Promise<PersistedAssessment | null> {
+  const result = await query<DbAssessmentRow>(
+    `SELECT
       id, user_id, name, field, goal, interest, level, hours_per_week,
       work_style, math_comfort, thinking_style, timeline_urgency,
       recommendation_top_json, recommendation_alternatives_json, created_at
-    FROM assessments
-    ${whereClause}
-  `;
-}
-
-export function getLatestAssessmentForUser(userId: string): PersistedAssessment | null {
-  const stmt = db.prepare(
-    `${selectBaseQuery("WHERE user_id = ? ORDER BY created_at DESC LIMIT 1")}`,
+     FROM assessments
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [userId],
   );
-  const row = stmt.get(userId) as DbAssessmentRow | undefined;
+
+  const row = result.rows[0];
   return row ? toPersisted(row) : null;
 }
 
-export function listAssessmentsForUser(userId: string): PersistedAssessment[] {
-  const stmt = db.prepare(`${selectBaseQuery("WHERE user_id = ? ORDER BY created_at DESC")}`);
-  const rows = stmt.all(userId) as DbAssessmentRow[];
-  return rows.map(toPersisted);
+export async function listAssessmentsForUser(userId: string): Promise<PersistedAssessment[]> {
+  const result = await query<DbAssessmentRow>(
+    `SELECT
+      id, user_id, name, field, goal, interest, level, hours_per_week,
+      work_style, math_comfort, thinking_style, timeline_urgency,
+      recommendation_top_json, recommendation_alternatives_json, created_at
+     FROM assessments
+     WHERE user_id = $1
+     ORDER BY created_at DESC`,
+    [userId],
+  );
+  return result.rows.map(toPersisted);
 }
 
-export function getAssessmentForUserById(userId: string, assessmentId: string): PersistedAssessment | null {
-  const stmt = db.prepare(
-    `${selectBaseQuery("WHERE user_id = ? AND id = ? ORDER BY created_at DESC LIMIT 1")}`,
+export async function getAssessmentForUserById(
+  userId: string,
+  assessmentId: string,
+): Promise<PersistedAssessment | null> {
+  const result = await query<DbAssessmentRow>(
+    `SELECT
+      id, user_id, name, field, goal, interest, level, hours_per_week,
+      work_style, math_comfort, thinking_style, timeline_urgency,
+      recommendation_top_json, recommendation_alternatives_json, created_at
+     FROM assessments
+     WHERE user_id = $1 AND id = $2
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [userId, assessmentId],
   );
-  const row = stmt.get(userId, assessmentId) as DbAssessmentRow | undefined;
+
+  const row = result.rows[0];
   return row ? toPersisted(row) : null;
 }
 
-export function listCompletedTasksForAssessment(userId: string, assessmentId: string): string[] {
-  const stmt = db.prepare(`
-    SELECT task_key FROM task_progress
-    WHERE user_id = ? AND assessment_id = ? AND completed = 1
-  `);
-
-  const rows = stmt.all(userId, assessmentId) as Array<{ task_key: string }>;
-  return rows.map((row) => row.task_key);
+export async function listCompletedTasksForAssessment(userId: string, assessmentId: string): Promise<string[]> {
+  const result = await query<{ task_key: string }>(
+    `SELECT task_key
+     FROM task_progress
+     WHERE user_id = $1 AND assessment_id = $2 AND completed = 1`,
+    [userId, assessmentId],
+  );
+  return result.rows.map((row) => row.task_key);
 }
 
-export function setTaskProgress(input: {
+export async function setTaskProgress(input: {
   userId: string;
   assessmentId: string;
   taskKey: string;
   completed: boolean;
 }) {
   const now = new Date().toISOString();
-  const stmt = db.prepare(`
-    INSERT INTO task_progress (user_id, assessment_id, task_key, completed, updated_at)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(user_id, assessment_id, task_key)
-    DO UPDATE SET completed = excluded.completed, updated_at = excluded.updated_at
-  `);
-
-  stmt.run(input.userId, input.assessmentId, input.taskKey, input.completed ? 1 : 0, now);
+  await query(
+    `INSERT INTO task_progress (user_id, assessment_id, task_key, completed, updated_at)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT(user_id, assessment_id, task_key)
+     DO UPDATE SET completed = EXCLUDED.completed, updated_at = EXCLUDED.updated_at`,
+    [input.userId, input.assessmentId, input.taskKey, input.completed ? 1 : 0, now],
+  );
 }
 
-export function getFeedbackForAssessment(
+export async function getFeedbackForAssessment(
   userId: string,
   assessmentId: string,
-): RecommendationFeedback | null {
-  const stmt = db.prepare(`
-    SELECT helpful, reason, updated_at
-    FROM recommendation_feedback
-    WHERE user_id = ? AND assessment_id = ?
-    LIMIT 1
-  `);
+): Promise<RecommendationFeedback | null> {
+  const result = await query<{ helpful: number; reason: string | null; updated_at: string }>(
+    `SELECT helpful, reason, updated_at
+     FROM recommendation_feedback
+     WHERE user_id = $1 AND assessment_id = $2
+     LIMIT 1`,
+    [userId, assessmentId],
+  );
 
-  const row = stmt.get(userId, assessmentId) as
-    | { helpful: number; reason: string | null; updated_at: string }
-    | undefined;
-
+  const row = result.rows[0];
   if (!row) {
     return null;
   }
@@ -199,21 +207,20 @@ export function getFeedbackForAssessment(
   };
 }
 
-export function upsertFeedback(input: {
+export async function upsertFeedback(input: {
   userId: string;
   assessmentId: string;
   helpful: boolean;
   reason: string;
 }) {
   const now = new Date().toISOString();
-  const stmt = db.prepare(`
-    INSERT INTO recommendation_feedback (user_id, assessment_id, helpful, reason, updated_at)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(user_id, assessment_id)
-    DO UPDATE SET helpful = excluded.helpful, reason = excluded.reason, updated_at = excluded.updated_at
-  `);
-
-  stmt.run(input.userId, input.assessmentId, input.helpful ? 1 : 0, input.reason, now);
+  await query(
+    `INSERT INTO recommendation_feedback (user_id, assessment_id, helpful, reason, updated_at)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT(user_id, assessment_id)
+     DO UPDATE SET helpful = EXCLUDED.helpful, reason = EXCLUDED.reason, updated_at = EXCLUDED.updated_at`,
+    [input.userId, input.assessmentId, input.helpful ? 1 : 0, input.reason, now],
+  );
 }
 
 function pathTitleToKey(title: string): PathKey | null {
@@ -227,22 +234,22 @@ function pathTitleToKey(title: string): PathKey | null {
   return null;
 }
 
-export function getAdaptivePathBias(limit = 300): Partial<Record<PathKey, number>> {
-  const stmt = db.prepare(`
-    SELECT rf.helpful, a.recommendation_top_json
-    FROM recommendation_feedback rf
-    JOIN assessments a ON a.id = rf.assessment_id
-    ORDER BY rf.updated_at DESC
-    LIMIT ?
-  `);
+export async function getAdaptivePathBias(limit = 300): Promise<Partial<Record<PathKey, number>>> {
+  const result = await query<DbFeedbackBiasRow>(
+    `SELECT rf.helpful, a.recommendation_top_json
+     FROM recommendation_feedback rf
+     JOIN assessments a ON a.id = rf.assessment_id
+     ORDER BY rf.updated_at DESC
+     LIMIT $1`,
+    [limit],
+  );
 
-  const rows = stmt.all(limit) as DbFeedbackBiasRow[];
+  const rows = result.rows;
   if (rows.length === 0) {
     return {};
   }
 
   const tally: Partial<Record<PathKey, { good: number; bad: number }>> = {};
-
   for (const row of rows) {
     try {
       const top = JSON.parse(row.recommendation_top_json) as { title?: string };
@@ -283,26 +290,24 @@ export function getAdaptivePathBias(limit = 300): Partial<Record<PathKey, number
   return bias;
 }
 
-export function getOutcomeCheckinForAssessment(
+export async function getOutcomeCheckinForAssessment(
   userId: string,
   assessmentId: string,
-): OutcomeCheckin | null {
-  const stmt = db.prepare(`
-    SELECT projects_completed, interviews_started, notes, updated_at
-    FROM outcome_checkins
-    WHERE user_id = ? AND assessment_id = ?
-    LIMIT 1
-  `);
+): Promise<OutcomeCheckin | null> {
+  const result = await query<{
+    projects_completed: number;
+    interviews_started: number;
+    notes: string | null;
+    updated_at: string;
+  }>(
+    `SELECT projects_completed, interviews_started, notes, updated_at
+     FROM outcome_checkins
+     WHERE user_id = $1 AND assessment_id = $2
+     LIMIT 1`,
+    [userId, assessmentId],
+  );
 
-  const row = stmt.get(userId, assessmentId) as
-    | {
-        projects_completed: number;
-        interviews_started: number;
-        notes: string | null;
-        updated_at: string;
-      }
-    | undefined;
-
+  const row = result.rows[0];
   if (!row) {
     return null;
   }
@@ -315,7 +320,7 @@ export function getOutcomeCheckinForAssessment(
   };
 }
 
-export function upsertOutcomeCheckin(input: {
+export async function upsertOutcomeCheckin(input: {
   userId: string;
   assessmentId: string;
   projectsCompleted: number;
@@ -323,36 +328,35 @@ export function upsertOutcomeCheckin(input: {
   notes: string;
 }) {
   const now = new Date().toISOString();
-  const stmt = db.prepare(`
-    INSERT INTO outcome_checkins (
+  await query(
+    `INSERT INTO outcome_checkins (
       user_id, assessment_id, projects_completed, interviews_started, notes, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6)
     ON CONFLICT(user_id, assessment_id)
     DO UPDATE SET
-      projects_completed = excluded.projects_completed,
-      interviews_started = excluded.interviews_started,
-      notes = excluded.notes,
-      updated_at = excluded.updated_at
-  `);
-
-  stmt.run(
-    input.userId,
-    input.assessmentId,
-    Math.max(0, Math.min(20, Math.trunc(input.projectsCompleted))),
-    input.interviewsStarted ? 1 : 0,
-    input.notes.trim(),
-    now,
+      projects_completed = EXCLUDED.projects_completed,
+      interviews_started = EXCLUDED.interviews_started,
+      notes = EXCLUDED.notes,
+      updated_at = EXCLUDED.updated_at`,
+    [
+      input.userId,
+      input.assessmentId,
+      Math.max(0, Math.min(20, Math.trunc(input.projectsCompleted))),
+      input.interviewsStarted ? 1 : 0,
+      input.notes.trim(),
+      now,
+    ],
   );
 }
 
-export function getAssessmentAgeInDays(assessmentId: string): number {
-  const stmt = db.prepare(`
-    SELECT CAST((julianday('now') - julianday(created_at)) AS INTEGER) AS age_days
-    FROM assessments
-    WHERE id = ?
-    LIMIT 1
-  `);
+export async function getAssessmentAgeInDays(assessmentId: string): Promise<number> {
+  const result = await query<{ age_days: number }>(
+    `SELECT COALESCE(EXTRACT(DAY FROM (NOW() - created_at))::INT, 0) AS age_days
+     FROM assessments
+     WHERE id = $1
+     LIMIT 1`,
+    [assessmentId],
+  );
 
-  const row = stmt.get(assessmentId) as { age_days: number } | undefined;
-  return row?.age_days ?? 0;
+  return result.rows[0]?.age_days ?? 0;
 }

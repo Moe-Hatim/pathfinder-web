@@ -29,8 +29,8 @@ export default async function DashboardPage() {
     );
   }
 
-  const latest = getLatestAssessmentForUser(user.id);
-  const history = listAssessmentsForUser(user.id);
+  const latest = await getLatestAssessmentForUser(user.id);
+  const history = await listAssessmentsForUser(user.id);
 
   if (!latest) {
     return (
@@ -49,9 +49,9 @@ export default async function DashboardPage() {
   }
 
   const { recommendation } = latest;
-  const completedTasks = listCompletedTasksForAssessment(user.id, latest.id);
-  const outcome = getOutcomeCheckinForAssessment(user.id, latest.id);
-  const ageInDays = getAssessmentAgeInDays(latest.id);
+  const completedTasks = await listCompletedTasksForAssessment(user.id, latest.id);
+  const outcome = await getOutcomeCheckinForAssessment(user.id, latest.id);
+  const ageInDays = await getAssessmentAgeInDays(latest.id);
   const showOutcomePrompt = ageInDays >= 14;
 
   return (
