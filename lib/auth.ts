@@ -81,8 +81,8 @@ export function createUser(input: { name: string; email: string; password: strin
 export function updateUserPasswordById(userId: string, password: string) {
   const passwordHash = hashPassword(password);
   const stmt = db.prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-  const result = stmt.run(passwordHash, userId);
-  return result.changes > 0;
+  const result = stmt.run(passwordHash, userId) as { changes?: number };
+  return (result.changes ?? 0) > 0;
 }
 
 export function authenticateUser(input: { email: string; password: string }) {

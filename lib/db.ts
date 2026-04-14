@@ -5,14 +5,14 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 type StatementLike = {
-  run: (...args: unknown[]) => any;
-  get: (...args: unknown[]) => any;
-  all: (...args: unknown[]) => any;
+  run: (...args: unknown[]) => unknown;
+  get: (...args: unknown[]) => unknown;
+  all: (...args: unknown[]) => unknown;
 };
 
 type DbLike = {
-  pragma: (statement: string) => any;
-  exec: (sql: string) => any;
+  pragma: (statement: string) => unknown;
+  exec: (sql: string) => unknown;
   prepare: (sql: string) => StatementLike;
 };
 

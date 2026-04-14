@@ -59,7 +59,7 @@ export function consumePasswordResetToken(rawToken: string): { userId: string } 
   `);
 
   const result = updateStmt.run(now, row.id);
-  if (result.changes === 0) {
+  if ((result as { changes?: number }).changes === 0) {
     return null;
   }
 

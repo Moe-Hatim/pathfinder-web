@@ -1,5 +1,4 @@
 import "server-only";
-import nodemailer from "nodemailer";
 
 type PasswordResetEmailInput = {
   toEmail: string;
@@ -53,6 +52,8 @@ export async function sendPasswordResetEmail(input: PasswordResetEmailInput): Pr
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
   if (smtpHost && smtpUser && smtpPass && emailFrom) {
+    const nodemailerModule = await import("nodemailer");
+    const nodemailer = nodemailerModule.default;
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
